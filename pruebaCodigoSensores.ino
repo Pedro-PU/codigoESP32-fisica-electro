@@ -39,6 +39,7 @@ int hallUni = 0;
 int valorAnalogico = 0;
 int velocidadPWM = 0;
 float velocidadMedia = 0;
+float velocidadLineal = 0;  // mm/s
 unsigned long tiempoUltimoConteo = 0;
 bool estadoAnteriorUni = HIGH;
 
@@ -55,6 +56,7 @@ void enviarAFirebase(void *parameter) {
       json.set("sensor_unipolar", hallUni);
       json.set("velocidad_pwm", velocidadPWM);
       json.set("velocidad_media", velocidadMedia);
+      json.set("velocidad_lineal", velocidadLineal);
 
       if (!Firebase.RTDB.setJSON(&fbdo, "/sensores", &json)) {
         Serial.println("Error al subir JSON: " + fbdo.errorReason());
@@ -141,11 +143,23 @@ void loop() {
     cont++;
     unsigned long tiempoActual = millis();
     if (tiempoUltimoConteo > 0) {
-      velocidadMedia = tiempoActual - tiempoUltimoConteo;
+      float tiempoEntrePulsos = tiempoActual - tiempoUltimoConteo;  // ms
+      if (tiempoEntrePulsos > 0) {
+        velocidadMedia = 1000.0 / tiempoEntrePulsos;  // Hz
+        velocidadLineal = velocidadMedia * 3.1416 * 35.0;  // mm/s
+      }
     }
     tiempoUltimoConteo = tiempoActual;
   }
   estadoAnteriorUni = hallUni;
+
+  // Apagar velocidad si no hay pulsos en 1 segundo
+  unsigned long tiempoActual = millis();
+  if (tiempoUltimoConteo > 0 && tiempoActual - tiempoUltimoConteo > 1000) {
+    velocidadMedia = 0;
+    velocidadLineal = 0;
+  }
+
 
   // Mover motor según hallValue
   if (hallValue == 1) {
@@ -160,14 +174,18 @@ void loop() {
     Serial.println("→ Giro sentido 2");
   }
 
+  float diametroRuedaMM = 35.0;  // mm
+  float perimetro = 3.1416 * diametroRuedaMM;  // mm
+  velocidadLineal = velocidadMedia * perimetro;  // mm/s
+
   // Mostrar datos
   Serial.print("Sensor digital: "); Serial.print(hallValue);
   Serial.print(" | Sensor lineal: "); Serial.print(valorAnalogico);
   Serial.print(" | Sensor unipolar: "); Serial.print(hallUni);
   Serial.print(" - Cont: "); Serial.print(cont);
   Serial.print(" | PWM: "); Serial.print(velocidadPWM);
-  Serial.print(" | Velocidad(ms): "); Serial.println(velocidadMedia);
-  Serial.print(" | ANALOGICO "); Serial.println(valorAnalogico);
+  Serial.print(" | Velocidad media: "); Serial.println(velocidadMedia);Serial.print(" Hz");
+  Serial.print(" | Velocidad lineal: "); Serial.println(velocidadLineal);Serial.print(" mm/s");
   delay(50);
 }
 
