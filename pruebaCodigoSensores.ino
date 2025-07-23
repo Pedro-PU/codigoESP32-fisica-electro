@@ -4,8 +4,9 @@
 #include <addons/RTDBHelper.h>
 
 // Configuración WiFi
-const char* WIFI_SSID = "CNT_GPON_PESANTEZ";
-const char* WIFI_PASSWORD = "Lampara2016";
+const char* WIFI_SSID = "Loayza";
+const char* WIFI_PASSWORD = "0706154184";
+
 
 // Configuración Firebase
 const char* API_KEY = "AIzaSyBGQwBXar9deS2CCicS_nXLrNIyvRaegg4";
@@ -19,9 +20,9 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 // Pines
-const int hallSensorPin = 25;
+const int hallSensorPin = 27;
 const int hallSensorAnalog = 34;
-const int hallSensorUni = 27;
+const int hallSensorUni = 25;
 const int ledPin = 26;
 
 // Motor
@@ -29,7 +30,7 @@ const int motorIN1 = 13;
 const int motorIN2 = 5;
 const int pwmChannelIN1 = 0;
 const int pwmChannelIN2 = 1;
-const int pwmFreq = 5000;
+const int pwmFreq = 1000;
 const int pwmResolution = 8;
 
 // Variables globales compartidas
@@ -130,13 +131,9 @@ void loop() {
   hallUni = digitalRead(hallSensorUni);
   valorAnalogico = analogRead(hallSensorAnalog);
 
-  velocidadPWM = map(valorAnalogico, 0, 4095, 0, 255);
-  velocidadPWM = constrain(velocidadPWM, 0, 255);
-
-  int PWM_MINIMO = 220; // Mínimo para el motor, de 250 sería el máximo a subir, pero no se nota la diferencia
-  if (velocidadPWM < PWM_MINIMO) {
-    velocidadPWM = PWM_MINIMO;
-  }
+  // Mapear lectura y asegurar que esté en el rango deseado
+  velocidadPWM = map(valorAnalogico, 0, 4095, 240, 255);//velocidadPWM = map(valorAnalogico, 0, 4095, 220, 255);
+  velocidadPWM = constrain(velocidadPWM, 220, 255);
 
   // Contador unipolar
   if (hallUni == LOW && estadoAnteriorUni == HIGH) {
